@@ -39,7 +39,7 @@ if not SECRET_KEY:
 # Dynamic hosts: ALLOWED_HOSTS env + safe defaults
 allowed_hosts = env_list("ALLOWED_HOSTS")
 if not allowed_hosts:
-    allowed_hosts.extend(["localhost", "127.0.0.1", "[::1]"])
+    allowed_hosts.extend(["localhost", "127.0.0.1", "[::1]", ".onrender.com"])
 
 normalized_hosts = []
 for host in allowed_hosts:
@@ -56,6 +56,7 @@ cloudinary.config()
 
 # Dynamic CSRF trusted origins
 csrf_trusted_origins = env_list("CSRF_TRUSTED_ORIGINS")
+csrf_trusted_origins.append("https://home-rental-6.onrender.com")
 for host in ALLOWED_HOSTS:
     if host.startswith("."):
         csrf_trusted_origins.append(f"https://*{host}")
