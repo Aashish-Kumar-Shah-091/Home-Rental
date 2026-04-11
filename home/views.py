@@ -38,6 +38,11 @@ User = get_user_model()  # Get the User model for use throughout views
 COORDINATE_LOCATION_RE = re.compile(r"^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$")
 ACCEPTED_CHAT_NOTIFICATION_MESSAGE = "Your booking has been accepted. You can now chat with the owner."
 
+
+def _is_admin_user(user):
+    """Return True for authenticated staff/superusers allowed to manage all listings."""
+    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
+
 def about(request):
     """
     Display the about page with company information, statistics, team members, and features.
@@ -154,7 +159,7 @@ def index(request):
     Display homepage with latest testimonials.
     Shows 6 most recent testimonials from users to showcase platform credibility.
     """
-    testimonials = Testimonial.objects.select_related("user").order_by("-created_at")[:6]
+    testimonials = Testimonial.objects.select_related("user", "user__profile").order_by("-created_at")[:6]
     return render(
         request,
         "index.html",
@@ -186,7 +191,7 @@ def reviews(request):
         testimonial_form = TestimonialForm()
 
     # Display all testimonials sorted by most recent
-    testimonials = Testimonial.objects.select_related("user").order_by("-created_at")
+    testimonials = Testimonial.objects.select_related("user", "user__profile").order_by("-created_at")
     return render(
         request,
         "reviews.html",
@@ -314,17 +319,22 @@ def home_create(request):
 def home_edit(request, home_id):
     """
     Edit an existing home entry.
-    Only the owner of the entry can edit it.
+    The owner can edit their own entry; admins can edit any entry.
     
     GET: Display pre-filled form
     POST: Update home entry in database
     """
-    home_obj = get_object_or_404(home, pk=home_id, user=request.user)  # Verify ownership
+    is_admin = _is_admin_user(request.user)
+    if is_admin:
+        home_obj = get_object_or_404(home, pk=home_id)
+    else:
+        home_obj = get_object_or_404(home, pk=home_id, user=request.user)  # Verify ownership
     if request.method == 'POST':
         form = homeForm(request.POST, request.FILES, instance=home_obj)
         if form.is_valid():
             home_obj = form.save(commit=False)
-            home_obj.user = request.user
+            if not is_admin:
+                home_obj.user = request.user
             home_obj.save()
             return redirect('home_list')
     else:
@@ -335,12 +345,15 @@ def home_edit(request, home_id):
 def home_delete(request, home_id):
     """
     Delete a home entry after confirmation.
-    Only the owner can delete their own entries.
+    Owners can delete their own entries; admins can delete any entry.
     
     GET: Display confirmation page
     POST: Delete entry from database
     """
-    home_obj = get_object_or_404(home, pk=home_id, user=request.user)  # Verify ownership
+    if _is_admin_user(request.user):
+        home_obj = get_object_or_404(home, pk=home_id)
+    else:
+        home_obj = get_object_or_404(home, pk=home_id, user=request.user)  # Verify ownership
     if request.method == 'POST':
         home_obj.delete()
         return redirect('home_list')
@@ -360,6 +373,7 @@ def register(request):
         if form.is_valid():
             user = form.save()  # Create new user
             login(request, user)  # Auto-login after registration
+            messages.success(request, f"Account created successfully. Welcome, {user.username}!")
             return redirect('home_list')
     else:
         form = UserRegistrationForm()
@@ -394,7 +408,7 @@ def _build_property_list_context(request, base_queryset, *, scope="all"):
 
     Parameters:
     - base_queryset: Base Property queryset before applying UI filters
-    - scope: "all" | "mine" | "others" (used for UI labels and nav state)
+    - scope: "all" | "mine" | "others" | "admin" (used for UI labels and nav state)
     """
     sort_option = request.GET.get("sort", "")  # Get sort parameter from URL
     selected_location = request.GET.get("location", "")  # Get location filter from URL
@@ -430,6 +444,9 @@ def _build_property_list_context(request, base_queryset, *, scope="all"):
     elif scope == "others":
         page_title = "Browse Properties"
         page_subtitle = "Browse listings from other owners"
+    elif scope == "admin":
+        page_title = "All Properties"
+        page_subtitle = "Admin management for all listings"
 
     filter_params = {}
     if selected_location:
@@ -480,10 +497,13 @@ def property_list(request):
 def my_properties(request):
     """
     Display properties created by the currently logged-in user.
-    Useful for owners to manage their own listings.
+    Owners see their own listings; admins see all listings for moderation.
     """
+    is_admin = _is_admin_user(request.user)
+    base_queryset = Property.objects.all() if is_admin else Property.objects.filter(user=request.user)
+    scope = "admin" if is_admin else "mine"
     context = _build_property_list_context(
-        request, Property.objects.filter(user=request.user), scope="mine"
+        request, base_queryset, scope=scope
     )
     return render(request, "property_list.html", context)
 
@@ -548,17 +568,22 @@ def property_detail(request, property_id):
 def property_edit(request, property_id):
     """
     Edit an existing property listing.
-    Only the property owner can edit their listing.
+    Property owners can edit their listing; admins can edit any listing.
     
     GET: Display pre-filled property form
     POST: Update property in database
     """
-    prop = get_object_or_404(Property, pk=property_id, user=request.user)  # Verify ownership
+    is_admin = _is_admin_user(request.user)
+    if is_admin:
+        prop = get_object_or_404(Property, pk=property_id)
+    else:
+        prop = get_object_or_404(Property, pk=property_id, user=request.user)  # Verify ownership
     if request.method == 'POST':
         form = PropertyForm(request.POST, request.FILES, instance=prop)
         if form.is_valid():
             prop = form.save(commit=False)
-            prop.user = request.user
+            if not is_admin:
+                prop.user = request.user
             prop.save()
             return redirect('my_properties')
     else:
@@ -570,12 +595,15 @@ def property_edit(request, property_id):
 def property_delete(request, property_id):
     """
     Delete a property listing.
-    Only the property owner can delete their listing.
+    Property owners can delete their listing; admins can delete any listing.
     
     GET: Display confirmation page
     POST: Delete property from database
     """
-    prop = get_object_or_404(Property, pk=property_id, user=request.user)  # Verify ownership
+    if _is_admin_user(request.user):
+        prop = get_object_or_404(Property, pk=property_id)
+    else:
+        prop = get_object_or_404(Property, pk=property_id, user=request.user)  # Verify ownership
     if request.method == 'POST':
         prop.delete()
         return redirect('my_properties')
