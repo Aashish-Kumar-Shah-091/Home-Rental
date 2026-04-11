@@ -18,10 +18,6 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: home-rental-db
-          property: connectionString
       - key: DB_ENGINE
         value: "django.db.backends.postgresql"
       - key: DB_NAME

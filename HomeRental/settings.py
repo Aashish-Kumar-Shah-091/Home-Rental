@@ -113,25 +113,45 @@ else:
 
 
 # ===== DATABASE CONFIGURATION =====
-# Use SQLite for local development by default.
-# Switch to MySQL by setting DB_ENGINE=mysql (or DB_NAME) plus DB_* variables.
+# Priority: PostgreSQL (Render) > MySQL > SQLite (local development)
 DB_ENGINE = os.environ.get("DB_ENGINE", "").strip().lower()
 DB_NAME = os.environ.get("DB_NAME", "").strip()
+DB_USER = os.environ.get("DB_USER", "").strip()
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "").strip()
+DB_HOST = os.environ.get("DB_HOST", "").strip()
+DB_PORT = os.environ.get("DB_PORT", "").strip()
 
-if DB_ENGINE in {"mysql", "django.db.backends.mysql"} or DB_NAME:
+# PostgreSQL Configuration (Render Production)
+if DB_ENGINE in {"postgresql", "django.db.backends.postgresql", "psycopg2"}:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": DB_NAME or "home_rental_db",
+            "USER": DB_USER or "postgres",
+            "PASSWORD": DB_PASSWORD or "",
+            "HOST": DB_HOST or "localhost",
+            "PORT": DB_PORT or "5432",
+            "OPTIONS": {
+                "sslmode": "require" if not DEBUG else "disable",
+            } if DB_HOST else {},
+        }
+    }
+# MySQL Configuration (Alternative production)
+elif DB_ENGINE in {"mysql", "django.db.backends.mysql"} or (DB_ENGINE == "" and DB_NAME and "mysql" in str(DB_HOST or "").lower()):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
             "NAME": DB_NAME or "home_rental",
-            "USER": os.environ.get("DB_USER", "root"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-            "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
-            "PORT": os.environ.get("DB_PORT", "3306"),
+            "USER": DB_USER or "root",
+            "PASSWORD": DB_PASSWORD or "",
+            "HOST": DB_HOST or "127.0.0.1",
+            "PORT": DB_PORT or "3306",
             "OPTIONS": {
                 "charset": "utf8mb4",
             },
         }
     }
+# SQLite Configuration (Local Development - Default)
 else:
     DATABASES = {
         "default": {
