@@ -8,6 +8,7 @@ import builtins
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.files.storage import FileSystemStorage
 
 
 # Legacy model for home listings (may be deprecated)
@@ -71,13 +72,16 @@ class Property(models.Model):
             return ""
 
         try:
-            # Check if the image file actually exists in storage
-            if self.image.storage.exists(self.image.name):
-                return self.image.url
+            # For local filesystem storage, ensure file exists to avoid broken links.
+            if isinstance(self.image.storage, FileSystemStorage):
+                if self.image.storage.exists(self.image.name):
+                    return self.image.url
+                return ""
+
+            # For remote storages (S3/Cloudinary), URL generation is sufficient.
+            return self.image.url
         except Exception:
             return ""
-
-        return ""
 
 
 class Favorite(models.Model):

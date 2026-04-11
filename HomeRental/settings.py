@@ -270,7 +270,11 @@ else:
     staticfiles_backend = "whitenoise.storage.CompressedStaticFilesStorage"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", str(BASE_DIR / "media")))
+SERVE_MEDIA_FILES = env_bool(
+    "SERVE_MEDIA_FILES",
+    DEBUG or MEDIA_STORAGE_BACKEND == "local",
+)
 
 STORAGES = {
     "default": {

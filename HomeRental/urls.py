@@ -33,7 +33,7 @@ urlpatterns = [
 
 ]
 
-# Serve media files (user uploads) only in local development.
-# In production, media must come from external object storage (S3/Cloudinary).
-if settings.DEBUG and settings.MEDIA_URL.startswith("/"):
+# Serve media files when running in development or when explicitly enabled for
+# local-file media storage in production-like environments.
+if settings.MEDIA_URL.startswith("/") and (settings.DEBUG or getattr(settings, "SERVE_MEDIA_FILES", False)):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
