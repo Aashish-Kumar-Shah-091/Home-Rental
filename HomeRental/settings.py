@@ -32,8 +32,10 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() in ['true', '1', 'yes']
 
 # Hosts/origins allowed for both HTTP and WebSocket traffic.
 # Override in production with ALLOWED_HOSTS environment variable
-ALLOWED_HOSTS_STR = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
-ALLOWED_HOSTS = ['home-rental-ogd2.onrender.com']
+ALLOWED_HOSTS = os.environ.get(
+    'ALLOWED_HOSTS',
+    'home-rental-ogd2.onrender.com,localhost,127.0.0.1'
+).split(',')
 
 
 # ===== INSTALLED APPLICATIONS =====
