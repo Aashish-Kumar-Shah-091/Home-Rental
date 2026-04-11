@@ -28,14 +28,10 @@ DEBUG = True  # Set to False in production
 
 # Hosts/origins allowed for both HTTP and WebSocket traffic.
 # Override in production with DJANGO_ALLOWED_HOSTS=example.com,www.example.com
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.environ.get(
-        "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1,[::1]",
-    ).split(",")
-    if host.strip()
-]
+
+# this is for the django project to be hosted for all
+
+ALLOWED_HOSTS = ['*']
 
 
 # ===== INSTALLED APPLICATIONS =====
@@ -58,6 +54,7 @@ INSTALLED_APPS = [
 # Middleware processes requests and responses
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',  # Security enhancements
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Static files serving
     'django.contrib.sessions.middleware.SessionMiddleware',  # Session management
     'django.middleware.common.CommonMiddleware',  # Common utilities
     'django.middleware.csrf.CsrfViewMiddleware',  # CSRF protection

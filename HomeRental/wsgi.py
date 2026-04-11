@@ -19,3 +19,4 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HomeRental.settings')
 
 # Get the WSGI application - this is what web servers call to handle requests
 application = get_wsgi_application()
+
