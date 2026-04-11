@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # ===== PATH CONFIGURATION =====
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -21,17 +25,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ===== SECURITY SETTINGS =====
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^jfqx_ra3f5!_zp0#rr50cy5qav3sxx)hm*ob&v^_%4)3rm%5e'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-^jfqx_ra3f5!_zp0#rr50cy5qav3sxx)hm*ob&v^_%4)3rm%5e')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # Set to False in production
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ['true', '1', 'yes']
 
 # Hosts/origins allowed for both HTTP and WebSocket traffic.
-# Override in production with DJANGO_ALLOWED_HOSTS=example.com,www.example.com
-
-# this is for the django project to be hosted for all
-
-ALLOWED_HOSTS = ['*']
+# Override in production with ALLOWED_HOSTS environment variable
+ALLOWED_HOSTS_STR = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_STR.split(',')]
 
 
 # ===== INSTALLED APPLICATIONS =====
@@ -176,8 +178,10 @@ USE_TZ = True  # Use timezone-aware datetime
 # ===== STATIC FILES CONFIGURATION =====
 # CSS, JavaScript, Images served by web server
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
-STATIC_URL = 'static/'  # URL prefix for static files
+STATIC_URL = '/static/'  # URL prefix for static files
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Static files collection directory for production
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Additional static files directories
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 
 # ===== MEDIA FILES CONFIGURATION =====
@@ -195,11 +199,11 @@ LOGOUT_REDIRECT_URL = '/home/'  # URL to redirect to after logout
 
 # for the email settings 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'shriram77890@gmail.com'       # Your Gmail
-EMAIL_HOST_PASSWORD = 'yaxr gdas ipss vksj'      # Use App Password
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ['true', '1', 'yes']
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'shriram77890@gmail.com')       # Your Gmail
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'yaxr gdas ipss vksj')      # Use App Password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
@@ -215,5 +219,25 @@ ESEWA_FORM_URL = os.environ.get(
     "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
 )
 
-SUCCESS_URL = "http://127.0.0.1:8000/payment/success/"
-FAILURE_URL = "http://127.0.0.1:8000/payment/failure/"
+SUCCESS_URL = os.environ.get("SUCCESS_URL", "http://127.0.0.1:8000/payment/success/")
+FAILURE_URL = os.environ.get("FAILURE_URL", "http://127.0.0.1:8000/payment/failure/")
+
+
+# ===== PRODUCTION SECURITY SETTINGS =====
+# Enable these in production (when DEBUG=False)
+if not DEBUG:
+    # HTTPS/SSL Settings
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Additional security headers
+    SECURE_CONTENT_SECURITY_POLICY = {
+        "default-src": ("'self'",),
+    }
+    
+    # X-Frame-Options
+    X_FRAME_OPTIONS = "DENY"
