@@ -486,20 +486,24 @@ New Property
 
 <div class="card property-card h-100 shadow-sm property-item">
 
-{% if property.image %}
-
+{% with image_url=property.image_url %}
 <div class="property-img-container">
-    <img src="{{ property.image.url }}"
+    {% if image_url %}
+    <img src="{{ image_url }}"
     class="card-img-top property-img"
     alt="{{ property.title }}"
     title="Click to view details">
-    
+    {% else %}
+    <div class="card-img-top property-img d-flex align-items-center justify-content-center text-muted bg-light-subtle">
+        <span><i class="fas fa-image me-2"></i>Image unavailable</span>
+    </div>
+    {% endif %}
+
     <span class="price-badge">
         <i class="fas fa-tag me-1"></i>Rs. {{ property.price }}
     </span>
 </div>
-
-{% endif %}
+{% endwith %}
 
 
 <div class="card-body d-flex flex-column">
