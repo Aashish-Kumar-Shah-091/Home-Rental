@@ -71,6 +71,13 @@ for host in ALLOWED_HOSTS:
 
 CSRF_TRUSTED_ORIGINS = sorted({origin for origin in csrf_trusted_origins if origin})
 
+# Media backend: local | s3 | cloudinary
+MEDIA_STORAGE_BACKEND = os.getenv("MEDIA_STORAGE_BACKEND", "local").strip().lower()
+if MEDIA_STORAGE_BACKEND not in {"local", "s3", "cloudinary"}:
+    raise ImproperlyConfigured(
+        "MEDIA_STORAGE_BACKEND must be one of: local, s3, cloudinary."
+    )
+
 
 # ===== INSTALLED APPLICATIONS =====
 INSTALLED_APPS = [
@@ -79,13 +86,18 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
     "daphne",
+    "django.contrib.staticfiles",
     "channels",
     "chat",
     "home",
     "payments",
 ]
+
+if MEDIA_STORAGE_BACKEND == "s3":
+    INSTALLED_APPS.append("storages")
+elif MEDIA_STORAGE_BACKEND == "cloudinary":
+    INSTALLED_APPS.extend(["cloudinary_storage", "cloudinary"])
 
 
 # ===== MIDDLEWARE CONFIGURATION =====
@@ -237,10 +249,72 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+if MEDIA_STORAGE_BACKEND == "s3":
+    aws_bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+    if not aws_bucket_name:
+        raise ImproperlyConfigured(
+            "AWS_STORAGE_BUCKET_NAME is required when MEDIA_STORAGE_BACKEND=s3."
+        )
+
+    aws_region = os.getenv("AWS_S3_REGION_NAME", "").strip()
+    aws_custom_domain = os.getenv("AWS_S3_CUSTOM_DOMAIN", "").strip()
+    aws_media_location = os.getenv("AWS_MEDIA_LOCATION", "media").strip().strip("/")
+
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": aws_bucket_name,
+            "region_name": aws_region or None,
+            "access_key": os.getenv("AWS_ACCESS_KEY_ID", "").strip() or None,
+            "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY", "").strip() or None,
+            "default_acl": None,
+            "file_overwrite": False,
+            "querystring_auth": env_bool("AWS_QUERYSTRING_AUTH", False),
+            "location": aws_media_location,
+            "custom_domain": aws_custom_domain or None,
+        },
+    }
+
+    if aws_custom_domain:
+        MEDIA_URL = f"https://{aws_custom_domain}/{aws_media_location}/"
+    elif aws_region:
+        MEDIA_URL = f"https://{aws_bucket_name}.s3.{aws_region}.amazonaws.com/{aws_media_location}/"
+    else:
+        MEDIA_URL = f"https://{aws_bucket_name}.s3.amazonaws.com/{aws_media_location}/"
+
+elif MEDIA_STORAGE_BACKEND == "cloudinary":
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+    api_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
+    api_secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
+
+    if not all([cloud_name, api_key, api_secret]):
+        raise ImproperlyConfigured(
+            "CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET are required "
+            "when MEDIA_STORAGE_BACKEND=cloudinary."
+        )
+
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": cloud_name,
+        "API_KEY": api_key,
+        "API_SECRET": api_secret,
+    }
+    STORAGES["default"] = {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    }
+    MEDIA_URL = f"https://res.cloudinary.com/{cloud_name}/"
 
 
 # ===== AUTHENTICATION SETTINGS =====

@@ -31,5 +31,9 @@ urlpatterns = [
     # Django built-in authentication URLs (login, logout, password change, etc.)
     path('accounts/', include('django.contrib.auth.urls')),
 
-# Serve media files (user uploads) during development
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+# Serve media files (user uploads) only in local development.
+# In production, media must come from external object storage (S3/Cloudinary).
+if settings.DEBUG and settings.MEDIA_URL.startswith("/"):
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
