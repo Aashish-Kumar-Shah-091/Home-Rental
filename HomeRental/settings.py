@@ -261,6 +261,14 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
+USE_MANIFEST_STATIC_FILES = env_bool("USE_MANIFEST_STATIC_FILES", False)
+if USE_MANIFEST_STATIC_FILES:
+    staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+else:
+    # Safer default on platforms where collectstatic/manifest may drift; avoids 500
+    # from missing manifest entries while keeping compressed static serving.
+    staticfiles_backend = "whitenoise.storage.CompressedStaticFilesStorage"
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -269,9 +277,12 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": staticfiles_backend,
     },
 }
+# Avoid 500s if a stale/missing manifest occurs during rollout; static files may
+# still 404, but pages won't crash.
+WHITENOISE_MANIFEST_STRICT = False
 
 if MEDIA_STORAGE_BACKEND == "s3":
     aws_bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
