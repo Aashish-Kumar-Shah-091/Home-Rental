@@ -3,9 +3,9 @@ Django settings for HomeRental project.
 Configuration for home rental web application.
 """
 
+import os
 from pathlib import Path
 from urllib.parse import unquote, urlparse
-import os
 
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
@@ -139,7 +139,14 @@ TEMPLATES = [
 
 # ===== CHANNELS / WEBSOCKETS =====
 CHANNEL_REDIS_URL = os.getenv("CHANNEL_REDIS_URL", "").strip()
-if CHANNEL_REDIS_URL:
+has_channels_redis = False
+try:
+    import channels_redis  # noqa: F401
+    has_channels_redis = True
+except ImportError:
+    has_channels_redis = False
+
+if CHANNEL_REDIS_URL and has_channels_redis:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -177,6 +184,8 @@ if DATABASE_URL:
                 "HOST": parsed.hostname or "",
                 "PORT": str(parsed.port or "5432"),
                 "OPTIONS": {"sslmode": "require"} if not DEBUG else {},
+                "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
+                "CONN_HEALTH_CHECKS": True,
             }
         }
     elif scheme in {"mysql", "mysql2"}:
@@ -204,6 +213,8 @@ elif DB_ENGINE in {"postgresql", "django.db.backends.postgresql", "psycopg2"}:
             "HOST": DB_HOST or "localhost",
             "PORT": DB_PORT or "5432",
             "OPTIONS": {"sslmode": "require"} if (not DEBUG and DB_HOST) else {},
+            "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
+            "CONN_HEALTH_CHECKS": True,
         }
     }
 

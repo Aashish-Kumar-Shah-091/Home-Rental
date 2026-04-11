@@ -55,3 +55,4 @@ boto3==1.40.58
 cloudinary==1.44.1
 django-cloudinary-storage==0.3.0
 django-storages==1.14.6
+channels-redis==4.2.0
