@@ -16,13 +16,7 @@ load_dotenv()
 
 # ===== CLOUDINARY INITIALIZATION =====
 # Initialize Cloudinary early so CloudinaryField can use it
-
-
-cloudinary.config(
-    cloud_name=os.getenv("dbekyt3g2"),
-    api_key=os.getenv("642252122754475"),
-    api_secret=os.getenv("gMImWB_gcj9RGFPFq3VuqJWO-io")
-)
+cloudinary.config()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
