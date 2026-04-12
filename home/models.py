@@ -9,6 +9,7 @@ import builtins
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.files.storage import FileSystemStorage
+from cloudinary.models import CloudinaryField
 
 
 # Legacy model for home listings (may be deprecated)
@@ -19,7 +20,7 @@ class home(models.Model):
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # User who created the home entry
     text = models.TextField(max_length=200)  # Description or text content
-    photo = models.ImageField(upload_to='photos/', blank=True, null=True)  # Home photo storage
+    photo = CloudinaryField('image', blank=True, null=True)  # Home photo storage
     created_at = models.DateTimeField(auto_now_add=True)  # Auto-timestamp on creation
     updated_at = models.DateTimeField(auto_now=True)  # Auto-timestamp on updates
 
@@ -53,7 +54,7 @@ class Property(models.Model):
     property_type = models.CharField(max_length=10, choices=PROPERTY_TYPE)  # Rent or Sell
     
     # Media and location coordinates
-    image = models.ImageField(upload_to='property_images/')  # Property main image
+    image = CloudinaryField('image')  # Property main image
     created_at = models.DateTimeField(auto_now_add=True)  # Creation timestamp
     latitude = models.FloatField(null=True, blank=True)  # GPS latitude for map display
     longitude = models.FloatField(null=True, blank=True)  # GPS longitude for map display
