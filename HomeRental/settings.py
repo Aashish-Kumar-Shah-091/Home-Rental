@@ -10,8 +10,16 @@ from urllib.parse import unquote, urlparse
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
-
 load_dotenv()
+
+# ===== CLOUDINARY INITIALIZATION =====
+# Initialize Cloudinary early so CloudinaryField can use it
+import cloudinary
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -391,15 +399,3 @@ X_FRAME_OPTIONS = os.getenv("X_FRAME_OPTIONS", "DENY")
 
 # ===== DEFAULT PRIMARY KEY FIELD TYPE =====
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# ===== CLOUDINARY CONFIGURATION =====
-# Only configure Cloudinary if deploying with MEDIA_STORAGE_BACKEND=cloudinary
-if MEDIA_STORAGE_BACKEND == "cloudinary":
-    import cloudinary
-    
-    cloudinary.config(
-        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-        api_key=os.getenv("CLOUDINARY_API_KEY"),
-        api_secret=os.getenv("CLOUDINARY_API_SECRET")
-    )
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

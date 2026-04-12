@@ -98,9 +98,13 @@
   color: #1f2d3d;
   font-size: 0.875rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: all 0.2s ease-in-out;
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .site-theme-toggle:hover {
@@ -108,6 +112,7 @@
   border-color: #b0c0d8;
   color: #0d47a1;
   transform: translateY(-1px);
+  cursor: pointer !important;
 }
 
 .site-theme-toggle:active {
@@ -119,9 +124,15 @@
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
+.site-theme-toggle:focus-visible {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}
+
 .site-theme-toggle i {
   font-size: 1rem;
   line-height: 1;
+  pointer-events: none;
 }
 
 [data-bs-theme="dark"] .site-theme-toggle {
@@ -134,10 +145,16 @@
   background-color: rgba(255, 255, 255, 0.1);
   border-color: #5a7089;
   color: #a8c8e6;
+  cursor: pointer !important;
 }
 
 [data-bs-theme="dark"] .site-theme-toggle:focus {
   box-shadow: 0 0 0 0.2rem rgba(138, 180, 248, 0.25);
+}
+
+[data-bs-theme="dark"] .site-theme-toggle:focus-visible {
+  outline: 2px solid #8ab4f8;
+  outline-offset: 2px;
 }
 
 .notif-pulse {
