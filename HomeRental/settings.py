@@ -26,7 +26,7 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 
 # ===== SECURITY SETTINGS =====
-DEBUG = True
+DEBUG = False
 
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 if not SECRET_KEY:
