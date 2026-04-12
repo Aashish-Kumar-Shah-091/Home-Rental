@@ -85,6 +85,61 @@
   z-index: 2;
 }
 
+/* ===== Theme Toggle Button ===== */
+.site-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background-color: transparent;
+  border: 1px solid #d6dee9;
+  border-radius: 0.375rem;
+  color: #1f2d3d;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  white-space: nowrap;
+}
+
+.site-theme-toggle:hover {
+  background-color: #f0f4f9;
+  border-color: #b0c0d8;
+  color: #0d47a1;
+  transform: translateY(-1px);
+}
+
+.site-theme-toggle:active {
+  transform: translateY(0);
+}
+
+.site-theme-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.site-theme-toggle i {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+[data-bs-theme="dark"] .site-theme-toggle {
+  background-color: transparent;
+  border-color: #3d4f63;
+  color: #e8eef8;
+}
+
+[data-bs-theme="dark"] .site-theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: #5a7089;
+  color: #a8c8e6;
+}
+
+[data-bs-theme="dark"] .site-theme-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(138, 180, 248, 0.25);
+}
+
 .notif-pulse {
   position: absolute;
   top: 6px;

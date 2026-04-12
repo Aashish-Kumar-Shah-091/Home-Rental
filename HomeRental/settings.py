@@ -92,8 +92,6 @@ INSTALLED_APPS = [
     "chat",
     "home",
     "payments",
-    'cloudinary',
-    'cloudinary_storage',
 ]
 
 if MEDIA_STORAGE_BACKEND == "s3":
@@ -394,14 +392,14 @@ X_FRAME_OPTIONS = os.getenv("X_FRAME_OPTIONS", "DENY")
 # ===== DEFAULT PRIMARY KEY FIELD TYPE =====
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Cloudinary for images
-import cloudinary
-import os
-
-cloudinary.config(
-    cloud_name = os.getenv("dbekyt3g2"),
-    api_key = os.getenv("642252122754475"),
-    api_secret = os.getenv("gMImWB_gcj9RGFPFq3VuqJWO-io")
-)
-
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# ===== CLOUDINARY CONFIGURATION =====
+# Only configure Cloudinary if deploying with MEDIA_STORAGE_BACKEND=cloudinary
+if MEDIA_STORAGE_BACKEND == "cloudinary":
+    import cloudinary
+    
+    cloudinary.config(
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET")
+    )
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
