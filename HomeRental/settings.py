@@ -6,6 +6,8 @@ Configuration for home rental web application.
 import os
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+import cloudinary
+
 
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
@@ -14,7 +16,8 @@ load_dotenv()
 
 # ===== CLOUDINARY INITIALIZATION =====
 # Initialize Cloudinary early so CloudinaryField can use it
-import cloudinary
+
+
 cloudinary.config(
     cloud_name=os.getenv("dbekyt3g2"),
     api_key=os.getenv("642252122754475"),
