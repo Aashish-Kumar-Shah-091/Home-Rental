@@ -16,9 +16,9 @@ load_dotenv()
 # Initialize Cloudinary early so CloudinaryField can use it
 import cloudinary
 cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET")
+    cloud_name=os.getenv("dbekyt3g2"),
+    api_key=os.getenv("642252122754475"),
+    api_secret=os.getenv("gMImWB_gcj9RGFPFq3VuqJWO-io")
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,7 +33,7 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 
 # ===== SECURITY SETTINGS =====
-DEBUG = env_bool("DEBUG", False)
+DEBUG = False
 
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 if not SECRET_KEY:
