@@ -14,10 +14,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ===== CLOUDINARY INITIALIZATION =====
-# Initialize Cloudinary early so CloudinaryField can use it
-cloudinary.config()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -63,6 +59,10 @@ for host in allowed_hosts:
 
 ALLOWED_HOSTS = sorted({h for h in normalized_hosts if h})
 
+#  For the cloudinary 
+cloudinary.config()
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Dynamic CSRF trusted origins
 csrf_trusted_origins = env_list("CSRF_TRUSTED_ORIGINS")
