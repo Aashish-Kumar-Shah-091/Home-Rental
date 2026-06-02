@@ -36,18 +36,10 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("SECRET_KEY environment variable must be set when DEBUG is False.")
 
 
-# Dynamic hosts: ALLOWED_HOSTS env + Render hostname + safe defaults
+# Dynamic hosts: ALLOWED_HOSTS env + safe defaults
 allowed_hosts = env_list("ALLOWED_HOSTS")
-render_external_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
-if render_external_hostname:
-    allowed_hosts.append(render_external_hostname)
-
 if not allowed_hosts:
     allowed_hosts.extend(["localhost", "127.0.0.1", "[::1]"])
-
-# Prevent DisallowedHost in Render if ALLOWED_HOSTS is not fully configured yet
-if not DEBUG:
-    allowed_hosts.append(".onrender.com")
 
 normalized_hosts = []
 for host in allowed_hosts:
@@ -62,8 +54,6 @@ ALLOWED_HOSTS = sorted({h for h in normalized_hosts if h})
 #  For the cloudinary 
 cloudinary.config()
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
 # Dynamic CSRF trusted origins
 csrf_trusted_origins = env_list("CSRF_TRUSTED_ORIGINS")
 for host in ALLOWED_HOSTS:
@@ -75,13 +65,6 @@ for host in ALLOWED_HOSTS:
         csrf_trusted_origins.append(f"https://{host}")
 
 CSRF_TRUSTED_ORIGINS = sorted({origin for origin in csrf_trusted_origins if origin})
-
-# Media backend: local | s3 | cloudinary
-MEDIA_STORAGE_BACKEND = os.getenv("MEDIA_STORAGE_BACKEND", "local").strip().lower()
-if MEDIA_STORAGE_BACKEND not in {"local", "s3", "cloudinary"}:
-    raise ImproperlyConfigured(
-        "MEDIA_STORAGE_BACKEND must be one of: local, s3, cloudinary."
-    )
 
 
 # ===== INSTALLED APPLICATIONS =====
@@ -98,11 +81,6 @@ INSTALLED_APPS = [
     "home",
     "payments",
 ]
-
-if MEDIA_STORAGE_BACKEND == "s3":
-    INSTALLED_APPS.append("storages")
-elif MEDIA_STORAGE_BACKEND == "cloudinary":
-    INSTALLED_APPS.extend(["cloudinary_storage", "cloudinary"])
 
 
 # ===== MIDDLEWARE CONFIGURATION =====
@@ -121,7 +99,6 @@ MIDDLEWARE = [
 # ===== URL / APP ENTRYPOINTS =====
 ROOT_URLCONF = "HomeRental.urls"
 ASGI_APPLICATION = "HomeRental.asgi.application"
-WSGI_APPLICATION = "HomeRental.wsgi.application"  # Gunicorn uses this
 
 
 # ===== TEMPLATE CONFIGURATION =====
@@ -146,6 +123,7 @@ TEMPLATES = [
 CHANNEL_REDIS_URL = os.getenv("CHANNEL_REDIS_URL", "").strip()
 has_channels_redis = False
 try:
+    # pyrefly: ignore [missing-import]
     import channels_redis  # noqa: F401
     has_channels_redis = True
 except ImportError:
@@ -266,86 +244,32 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
-USE_MANIFEST_STATIC_FILES = env_bool("USE_MANIFEST_STATIC_FILES", False)
-if USE_MANIFEST_STATIC_FILES:
-    staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-else:
-    # Safer default on platforms where collectstatic/manifest may drift; avoids 500
-    # from missing manifest entries while keeping compressed static serving.
-    staticfiles_backend = "whitenoise.storage.CompressedStaticFilesStorage"
-
 MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", str(BASE_DIR / "media")))
+MEDIA_STORAGE_BACKEND = os.getenv("MEDIA_STORAGE_BACKEND", "local").strip().lower()
 SERVE_MEDIA_FILES = env_bool(
     "SERVE_MEDIA_FILES",
     DEBUG or MEDIA_STORAGE_BACKEND == "local",
 )
 
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": staticfiles_backend,
-    },
-}
-# Avoid 500s if a stale/missing manifest occurs during rollout; static files may
-# still 404, but pages won't crash.
-WHITENOISE_MANIFEST_STRICT = False
-
-if MEDIA_STORAGE_BACKEND == "s3":
-    aws_bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
-    if not aws_bucket_name:
-        raise ImproperlyConfigured(
-            "AWS_STORAGE_BUCKET_NAME is required when MEDIA_STORAGE_BACKEND=s3."
-        )
-
-    aws_region = os.getenv("AWS_S3_REGION_NAME", "").strip()
-    aws_custom_domain = os.getenv("AWS_S3_CUSTOM_DOMAIN", "").strip()
-    aws_media_location = os.getenv("AWS_MEDIA_LOCATION", "media").strip().strip("/")
-
-    STORAGES["default"] = {
-        "BACKEND": "storages.backends.s3.S3Storage",
-        "OPTIONS": {
-            "bucket_name": aws_bucket_name,
-            "region_name": aws_region or None,
-            "access_key": os.getenv("AWS_ACCESS_KEY_ID", "").strip() or None,
-            "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY", "").strip() or None,
-            "default_acl": None,
-            "file_overwrite": False,
-            "querystring_auth": env_bool("AWS_QUERYSTRING_AUTH", False),
-            "location": aws_media_location,
-            "custom_domain": aws_custom_domain or None,
+if os.getenv("CLOUDINARY_URL"):
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
-
-    if aws_custom_domain:
-        MEDIA_URL = f"https://{aws_custom_domain}/{aws_media_location}/"
-    elif aws_region:
-        MEDIA_URL = f"https://{aws_bucket_name}.s3.{aws_region}.amazonaws.com/{aws_media_location}/"
-    else:
-        MEDIA_URL = f"https://{aws_bucket_name}.s3.amazonaws.com/{aws_media_location}/"
-
-elif MEDIA_STORAGE_BACKEND == "cloudinary":
-    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
-    api_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
-    api_secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
-
-    if not all([cloud_name, api_key, api_secret]):
-        raise ImproperlyConfigured(
-            "CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET are required "
-            "when MEDIA_STORAGE_BACKEND=cloudinary."
-        )
-
-    CLOUDINARY_STORAGE = {
-        "CLOUD_NAME": cloud_name,
-        "API_KEY": api_key,
-        "API_SECRET": api_secret,
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
     }
-    STORAGES["default"] = {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    }
-    MEDIA_URL = f"https://res.cloudinary.com/{cloud_name}/"
 
 
 # ===== AUTHENTICATION SETTINGS =====

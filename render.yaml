@@ -1,80 +1,32 @@
+databases:
+  - name: homerental-db
+    plan: free
+    databaseName: homerental
+    user: homerental_user
+
 services:
   - type: web
-    name: home-rental
+    name: homerental
     runtime: python
-    runtimeVersion: 3.11
-    buildCommand: >
-      pip install -r requirements.txt &&
-      python manage.py migrate --noinput &&
-      python manage.py collectstatic --no-input
-    startCommand: "gunicorn HomeRental.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --log-file -"
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: daphne -b 0.0.0.0 -p $PORT HomeRental.asgi:application
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: DEBUG
-        value: false
-      - key: USE_MANIFEST_STATIC_FILES
-        value: false
-      - key: ALLOWED_HOSTS
-        value: localhost,127.0.0.1
-        sync: false
-      - key: SECRET_KEY
-        sync: false
-      - key: DB_ENGINE
-        value: "django.db.backends.postgresql"
-      - key: DB_NAME
+      - key: DATABASE_URL
         fromDatabase:
-          name: home-rental-db
-          property: database
-      - key: DB_USER
-        fromDatabase:
-          name: home-rental-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: home-rental-db
-          property: password
-      - key: DB_HOST
-        fromDatabase:
-          name: home-rental-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: home-rental-db
-          property: port
-      - key: CHANNEL_REDIS_URL
-        fromService:
-          name: home-rental-redis
+          name: homerental-db
           property: connectionString
-      - key: EMAIL_HOST
-        value: "smtp.gmail.com"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://*.onrender.com
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+      - key: CLOUDINARY_URL
         sync: false
-      - key: EMAIL_PORT
-        value: "587"
-      - key: EMAIL_USE_TLS
-        value: "True"
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
         sync: false
-      - key: ESEWA_SECRET_KEY
-        sync: false
-      - key: ESEWA_FORM_URL
-        value: "https://epay.esewa.com.np/api/epay/main/v2/form"
-        sync: false
-      - key: SUCCESS_URL
-        sync: false
-      - key: FAILURE_URL
-        sync: false
-
-  - type: redis
-    name: home-rental-redis
-    plan: free
-    maxmemoryPolicy: noeviction
-
-databases:
-  - name: home-rental-db
-    databaseName: home_rental_db
-    user: home_rental_user
-    plan: free
-    version: 15
